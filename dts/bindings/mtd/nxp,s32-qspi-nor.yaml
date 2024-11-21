@@ -36,3 +36,17 @@ properties:
     description: |
       Specify the number of data lines and opcode used for writing.
       If not provided, 1-1-1 will be selected.
+
+  write-block-size:
+    type: int
+    enum:
+      - 1
+      - 2
+      - 4
+      - 8
+      - 16
+      - 32
+      - 64
+    default: 32
+    description: |
+      Minimum granularity for writing data to the device.
