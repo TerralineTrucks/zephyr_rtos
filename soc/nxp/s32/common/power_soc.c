@@ -75,6 +75,7 @@ static int nxp_s32_power_init(void)
 		/* PMC Configuration Register (CONFIG) */
 		.ConfigRegister = PMC_CONFIG_LMEN(IS_ENABLED(CONFIG_NXP_S32_PMC_LMEN))
 			| PMC_CONFIG_LMBCTLEN(IS_ENABLED(CONFIG_NXP_S32_PMC_LMBCTLEN)),
+#elif defined(CONFIG_SOC_SERIES_S32ZE)
 #else
 #error "SoC not supported"
 #endif
