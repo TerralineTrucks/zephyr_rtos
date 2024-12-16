@@ -145,7 +145,7 @@ static int flash_sync(struct stream_flash_ctx *ctx)
 		fill_length -= ctx->buf_bytes % fill_length;
 		filler = ctx->erase_value;
 
-		memset(ctx->buf + ctx->buf_bytes, filler, fill_length);
+		(void)memset(&ctx->buf[ctx->buf_bytes], filler, fill_length);
 	} else {
 		fill_length = 0;
 	}
@@ -190,44 +190,53 @@ static int flash_sync(struct stream_flash_ctx *ctx)
 int stream_flash_buffered_write(struct stream_flash_ctx *ctx, const uint8_t *data,
 				size_t len, bool flush)
 {
-	int processed = 0;
 	int rc = 0;
-	int buf_empty_bytes;
+	size_t buf_empty_bytes = ctx->buf_len - ctx->buf_bytes;
+	size_t processed = 0;
 
 	if (!ctx) {
 		return -EFAULT;
 	}
+	if (len < 0) {
+		return -EINVAL;
+	}
 
-	if (ctx->bytes_written + ctx->buf_bytes + len > ctx->available) {
+	// Check that this series won't overrun the underlying flash area
+	size_t total_potential_sz = ctx->bytes_written + ctx->buf_bytes + len;
+	if (total_potential_sz > ctx->available) {
+		return -ENOMEM;
+	}
+	// Check overflow in case of a maliciously execessive len
+	if (total_potential_sz < (ctx->bytes_written + ctx->buf_bytes)) {
 		return -ENOMEM;
 	}
 
-	while ((len - processed) >=
-	       (buf_empty_bytes = ctx->buf_len - ctx->buf_bytes)) {
-		memcpy(ctx->buf + ctx->buf_bytes, data + processed,
-		       buf_empty_bytes);
+	// Work through the incoming data, flushing out a write anytime the buffered
+	// context becomes full
+	while (processed < len) {
+		size_t buf_remaining = ctx->buf_len - ctx->buf_bytes;
+		size_t bytes_to_copy = MIN(len, buf_remaining);
+		(void)memcpy(&ctx->buf[ctx->buf_bytes], &data[processed], bytes_to_copy);
+		ctx->buf_bytes += bytes_to_copy;
+		processed += bytes_to_copy;
 
-		ctx->buf_bytes = ctx->buf_len;
+		if (ctx->buf_bytes == ctx->buf_len) {
+			rc = flash_sync(ctx);
+			if (rc != 0) {
+				return rc;
+			}
+		}
+	}
+
+	// If this is the last call, flush any remainder out
+	if (flush && (ctx->buf_bytes > 0)) {
 		rc = flash_sync(ctx);
-
 		if (rc != 0) {
 			return rc;
 		}
-
-		processed += buf_empty_bytes;
 	}
 
-	/* place rest of the data into ctx->buf */
-	if (processed < len) {
-		memcpy(ctx->buf + ctx->buf_bytes,
-		       data + processed, len - processed);
-		ctx->buf_bytes += len - processed;
-	}
-
-	if (flush && ctx->buf_bytes > 0) {
-		rc = flash_sync(ctx);
-	}
-
+	rc = 0;
 	return rc;
 }
 
