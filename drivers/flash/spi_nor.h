@@ -41,6 +41,7 @@
 #define SPI_NOR_CMD_BE_32K       0x52 /* Block erase 32KB */
 #define SPI_NOR_CMD_BE_32K_4B    0x5C /* Block erase 32KB 4 byte address*/
 #define SPI_NOR_CMD_BE           0xD8 /* Block erase */
+#define SPI_NOR_CMD_BE_4B        0xDC /* Block erase 4 byte address*/
 #define SPI_NOR_CMD_CE           0xC7 /* Chip erase */
 #define SPI_NOR_CMD_RDID         0x9F /* Read JEDEC ID */
 #define SPI_NOR_CMD_ULBPR        0x98 /* Global Block Protection Unlock */
