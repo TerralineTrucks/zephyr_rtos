@@ -422,7 +422,7 @@ static int nxp_s32_qspi_wait_until_ready(const struct device *dev)
 {
 	struct nxp_s32_qspi_data *data = dev->data;
 	Qspi_Ip_StatusType status;
-	uint32_t timeout = 0xFFFFFF;
+	uint32_t timeout = 0xFFFFFFFF;
 	int ret = 0;
 
 	do {
@@ -971,41 +971,6 @@ static void nxp_s32_qspi_pages_layout(const struct device *dev,
 }
 #endif /* CONFIG_FLASH_PAGE_LAYOUT */
 
-static int config_luts(const struct device *dev)
-{
-	volatile QuadSPI_Type *base_addr = (QuadSPI_Type *)(0x42320000);
-#define kLutsPerSequence 5
-	const uint8_t kNumberOfDummyOps = 8U;
-	volatile uint32_t *lut;
-	int sequence = 0;
-	uint32_t ops[kLutsPerSequence * 2] = {};
-
-	// Sequence 0 -- Basic 32-bit Address Read, 32 bytes
-	sequence = 0;
-	lut = &base_addr->LUT[sequence * kLutsPerSequence];
-	memset(ops, 0, sizeof(ops));
-	ops[0] = QSPI_LUT_OP(QSPI_IP_LUT_INSTR_CMD, QSPI_IP_LUT_PADS_1, SPI_NOR_CMD_READ_4B);
-	ops[1] = QSPI_LUT_OP(QSPI_IP_LUT_INSTR_ADDR, QSPI_IP_LUT_PADS_1, 32U);
-	ops[2] = QSPI_LUT_OP(QSPI_IP_LUT_INSTR_DUMMY, QSPI_IP_LUT_PADS_1, kNumberOfDummyOps);
-	ops[3] = QSPI_LUT_OP(QSPI_IP_LUT_INSTR_READ, QSPI_IP_LUT_PADS_1, 32U);
-	ops[4] = QSPI_LUT_OP(QSPI_IP_LUT_INSTR_STOP, QSPI_IP_LUT_PADS_1, QSPI_IP_LUT_SEQ_END);
-	for (int i = 0; i < kLutsPerSequence; i++) {
-		lut[i] = QSPI_IP_PACK_LUT_REG(ops[i * 2], ops[i * 2 + 1]);
-	}
-
-	// Sequence 1 -- Basic Erase Sector
-	sequence = 1;
-	lut = &base_addr->LUT[sequence * kLutsPerSequence];
-	memset(ops, 0, sizeof(ops));
-	// TODO
-
-	// Sequence 2 -- Basic Program
-	sequence = 2;
-	lut = &base_addr->LUT[sequence * kLutsPerSequence];
-	memset(ops, 0, sizeof(ops));
-	// TODO
-}
-
 static int nxp_s32_qspi_init(const struct device *dev)
 {
 	struct nxp_s32_qspi_data *data = dev->data;
@@ -1066,14 +1031,13 @@ static int nxp_s32_qspi_init(const struct device *dev)
 	}
 #endif /* !CONFIG_FLASH_NXP_S32_QSPI_NOR_SFDP_RUNTIME */
 
-	// volatile QuadSPI_Type *base_addr = (QuadSPI_Type *)(0x42320000);
-	// base_addr->MGC = 0x0; // Disable all access controls
-
-	uint32_t tmp_data[8] = {};
-	uint32_t addr = 0x500000;
+	uint8_t tmp_data[48] = {};
+	uint32_t addr = 0x000;
 	(void)nxp_s32_qspi_read(dev, addr, (uint8_t *)&tmp_data[0], sizeof(tmp_data));
-	for (int i = 0; i < 8; i++) {
-		LOG_DBG("addr 0x%x: %08x", (addr + (i * 4)), tmp_data[i]);
+	for (int i = 0; i < 12; i++) {
+		int index = 4 * i;
+		LOG_DBG("addr 0x%x: %02x %02x %02x %02x", (addr + index), tmp_data[index],
+			tmp_data[index + 1], tmp_data[index + 2], tmp_data[index + 3]);
 	}
 
 #if 0
