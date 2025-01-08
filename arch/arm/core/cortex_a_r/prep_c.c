@@ -40,8 +40,7 @@
 #include <string.h>
 
 #if defined(CONFIG_SW_VECTOR_RELAY) || defined(CONFIG_SW_VECTOR_RELAY_CLIENT)
-Z_GENERIC_SECTION(.vt_pointer_section) __attribute__((used))
-void *_vector_table_pointer;
+Z_GENERIC_SECTION(.vt_pointer_section) __attribute__((used)) void *_vector_table_pointer;
 #endif
 
 #ifdef CONFIG_ARM_MPU
@@ -67,7 +66,7 @@ static inline void relocate_vector_table(void)
 
 void __weak relocate_vector_table(void)
 {
-#if defined(CONFIG_XIP) && (CONFIG_FLASH_BASE_ADDRESS != 0) || \
+#if defined(CONFIG_XIP) && (CONFIG_FLASH_BASE_ADDRESS != 0) ||                                     \
 	!defined(CONFIG_XIP) && (CONFIG_SRAM_BASE_ADDRESS != 0)
 	write_sctlr(read_sctlr() & ~HIVECS);
 	size_t vector_size = (size_t)_vector_end - (size_t)_vector_start;
@@ -147,6 +146,9 @@ extern FUNC_NORETURN void z_cstart(void);
  */
 void z_prep_c(void)
 {
+	// Enable debugging in RTU0 TODO MCC
+	*(volatile uint32_t *)0x4dc100c0 = 0x3cf3cf00;
+
 	/* Initialize tpidruro with our struct _cpu instance address */
 	write_tpidruro((uintptr_t)&_kernel.cpus[0]);
 
@@ -154,12 +156,16 @@ void z_prep_c(void)
 #if defined(CONFIG_CPU_HAS_FPU)
 	z_arm_floating_point_init();
 #endif
+
 	z_bss_zero();
 	z_data_copy();
-#if ((defined(CONFIG_ARMV7_R) || defined(CONFIG_ARMV7_A)) && defined(CONFIG_INIT_STACKS))
+#if defined(CONFIG_INIT_STACKS)
+#if (defined(CONFIG_ARMV7_R) || defined(CONFIG_ARMV7_A) || defined(CONFIG_AARCH32_ARMV8_R))
 	z_arm_init_stacks();
 #endif
+#endif /* CONFIG_INIT_STACKS */
 	z_arm_interrupt_init();
+
 #ifdef CONFIG_ARM_MPU
 	z_arm_mpu_init();
 	z_arm_configure_static_mpu_regions();
