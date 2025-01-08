@@ -46,9 +46,53 @@ GTEXT(z_arm_platform_init)
  * setting up the system for running C code.
  *
  */
+
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, z_arm_reset)
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
+    .align 8
+
 #if defined(CONFIG_AARCH32_ARMV8_R)
+    .syntax unified
+    .thumb
+
+    /* NOP sled of 8 (2 bytes each) since the Boot ROM will actually start it 12 bytes
+     * before the indicated "Start" address. The start address needs to be 8 aligned. */
+    nop
+    nop
+    nop // Actual start of execution
+    nop
+    nop
+    nop
+    nop
+    nop
+    //.byte 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe
+    //.byte 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf
+
+SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start_t32)
+    .thumb
+    /* Set VBAR to the correct location to help debugging early reset */
+    ldr r0, =_vector_table
+    mcr p15, 0, r0, c12, c0, 0
+    nop
+
+    /* Leave T32 (thumb) mode for A32 */
+    ldr r0, =Start_A32
+    blx r0
+    nop
+    nop
+
+Debug_Loop:
+    .arm
+    ldr r0, =Debug_Loop2
+    bx r0
+
+Debug_Loop2:
+    .arm
+    ldr r0, =Debug_Loop
+    bx r0
+
+Start_A32:
+    .arm
     /* Check if we are starting in HYP mode */
     mrs r0, cpsr
     and r0, r0, #MODE_MASK
@@ -87,6 +131,7 @@ EL1_Reset_Handler:
      */
 
     /* Common and SVC mode registers */
+    cps #MODE_SVC
     mov r0,  #0
     mov r1,  #0
     mov r2,  #0
@@ -268,6 +313,8 @@ _primary_core:
 
 #if defined(CONFIG_PLATFORM_SPECIFIC_INIT)
     /* Execute platform-specific initialisation if applicable */
+    //ldr r0, =Debug_Loop
+    //bx r0
     bl z_arm_platform_init
 #endif
 
@@ -279,5 +326,5 @@ _primary_core:
 #if defined(CONFIG_DISABLE_TCM_ECC)
     bl z_arm_tcm_disable_ecc
 #endif
-
+    
     bx r4
