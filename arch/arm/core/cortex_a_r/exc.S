@@ -219,6 +219,10 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_data_abort)
 	 */
 	sub lr, #8
 
+DEBUG_LOOP3:
+	ldr r0, =DEBUG_LOOP3
+	bx r0
+
 	exception_entry MODE_ABT
 	bl z_arm_fault_data
 
