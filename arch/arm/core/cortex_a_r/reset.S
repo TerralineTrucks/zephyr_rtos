@@ -53,6 +53,8 @@ SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
 
 #if defined(CONFIG_AARCH32_ARMV8_R)
     .syntax unified
+
+#if defined(CONFIG_MCUBOOT)
     .thumb
 
     /* NOP sled of 8 (2 bytes each) since the Boot ROM will actually start it 12 bytes
@@ -65,9 +67,7 @@ SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
     nop
     nop
     nop
-    //.byte 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe, 0xe7, 0xfe
-    //.byte 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf, 0x00, 0xbf
-
+    
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start_t32)
     .thumb
     /* Set VBAR to the correct location to help debugging early reset */
@@ -80,16 +80,7 @@ SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start_t32)
     blx r0
     nop
     nop
-
-Debug_Loop:
-    .arm
-    ldr r0, =Debug_Loop2
-    bx r0
-
-Debug_Loop2:
-    .arm
-    ldr r0, =Debug_Loop
-    bx r0
+#endif /* CONFIG_MCUBOOT */
 
 Start_A32:
     .arm
@@ -121,7 +112,7 @@ Start_A32:
 
 EL1_Reset_Handler:
 
-#endif
+#endif /* CONFIG_AARCH32_ARMV8_R */
 
 #if defined(CONFIG_DCLS)
     /*
@@ -274,7 +265,6 @@ EL1_Reset_Handler:
 _primary_core:
 #endif
 
-    ldr r4, =z_prep_c
     ldr r5, =(z_arm_fiq_stack + CONFIG_ARMV7_FIQ_STACK_SIZE)
     ldr r6, =(z_interrupt_stacks + CONFIG_ISR_STACK_SIZE)
     ldr r7, =(z_arm_abort_stack + CONFIG_ARMV7_EXCEPTION_STACK_SIZE)
@@ -313,11 +303,9 @@ _primary_core:
 
 #if defined(CONFIG_PLATFORM_SPECIFIC_INIT)
     /* Execute platform-specific initialisation if applicable */
-    //ldr r0, =Debug_Loop
-    //bx r0
     bl z_arm_platform_init
 #endif
-
+    
 #if defined(CONFIG_WDOG_INIT)
     /* board-specific watchdog initialization is necessary */
     bl z_arm_watchdog_init
@@ -326,5 +314,6 @@ _primary_core:
 #if defined(CONFIG_DISABLE_TCM_ECC)
     bl z_arm_tcm_disable_ecc
 #endif
-    
+
+    ldr r4, =z_prep_c
     bx r4
