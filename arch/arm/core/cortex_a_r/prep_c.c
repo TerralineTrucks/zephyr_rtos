@@ -146,9 +146,6 @@ extern FUNC_NORETURN void z_cstart(void);
  */
 void z_prep_c(void)
 {
-	// Enable debugging in RTU0 TODO MCC
-	*(volatile uint32_t *)0x4dc100c0 = 0x3cf3cf00;
-
 	/* Initialize tpidruro with our struct _cpu instance address */
 	write_tpidruro((uintptr_t)&_kernel.cpus[0]);
 
@@ -164,6 +161,7 @@ void z_prep_c(void)
 	z_arm_init_stacks();
 #endif
 #endif /* CONFIG_INIT_STACKS */
+
 	z_arm_interrupt_init();
 
 #ifdef CONFIG_ARM_MPU
