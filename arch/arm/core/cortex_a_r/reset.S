@@ -46,11 +46,9 @@ GTEXT(z_arm_platform_init)
  * setting up the system for running C code.
  *
  */
-
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, z_arm_reset)
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
     .align 8
-
 #if defined(CONFIG_AARCH32_ARMV8_R)
     .syntax unified
 
@@ -305,7 +303,7 @@ _primary_core:
     /* Execute platform-specific initialisation if applicable */
     bl z_arm_platform_init
 #endif
-    
+
 #if defined(CONFIG_WDOG_INIT)
     /* board-specific watchdog initialization is necessary */
     bl z_arm_watchdog_init

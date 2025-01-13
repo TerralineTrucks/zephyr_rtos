@@ -272,7 +272,6 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_prefetch_abort)
 	 * prefetch abort exceptions.
 	 */
 	sub lr, #4
-
 	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_prefetch
 	b z_arm_cortex_ar_exit_exc
