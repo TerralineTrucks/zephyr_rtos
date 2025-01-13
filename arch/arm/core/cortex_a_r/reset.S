@@ -49,7 +49,6 @@ GTEXT(z_arm_platform_init)
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, z_arm_reset)
 SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
     .align 8
-
 #if defined(CONFIG_AARCH32_ARMV8_R)
     .syntax unified
 

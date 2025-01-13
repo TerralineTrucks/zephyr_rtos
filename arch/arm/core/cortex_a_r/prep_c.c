@@ -156,9 +156,11 @@ void z_prep_c(void)
 #endif
 	z_bss_zero();
 	z_data_copy();
-#if ((defined(CONFIG_ARMV7_R) || defined(CONFIG_ARMV7_A)) && defined(CONFIG_INIT_STACKS))
+#if defined(CONFIG_INIT_STACKS)
+#if (defined(CONFIG_ARMV7_R) || defined(CONFIG_ARMV7_A) || defined(CONFIG_AARCH32_ARMV8_R))
 	z_arm_init_stacks();
 #endif
+#endif /* CONFIG_INIT_STACKS */
 	z_arm_interrupt_init();
 #ifdef CONFIG_ARM_MPU
 	z_arm_mpu_init();
