@@ -119,14 +119,117 @@
 			reg = <0x35780000 DT_SIZE_M(1)>;
 		};
 
-		sram_code0: memory@32100000 {
+		sram_rtu0_core0_tcmA: memory@30000000 {
 			compatible = "mmio-sram";
-			reg = <0x32100000 DT_SIZE_M(7)>;
+			reg = <0x30000000 DT_SIZE_K(64)>;
+		};
+		sram_rtu0_core0_tcmB: memory@30100000 {
+			compatible = "mmio-sram";
+			reg = <0x30100000 DT_SIZE_K(16)>;
+		};
+		sram_rtu0_core0_tcmC: memory@30200000 {
+			compatible = "mmio-sram";
+			reg = <0x30200000 DT_SIZE_K(16)>;
 		};
 
-		sram_code1: memory@36100000 {
+		sram_rtu0_core1_tcmA: memory@30400000 {
 			compatible = "mmio-sram";
-			reg = <0x36100000 DT_SIZE_M(7)>;
+			reg = <0x30400000 DT_SIZE_K(64)>;
+		};
+		sram_rtu0_core1_tcmB: memory@30500000 {
+			compatible = "mmio-sram";
+			reg = <0x30500000 DT_SIZE_K(16)>;
+		};
+		sram_rtu0_core1_tcmC: memory@30600000 {
+			compatible = "mmio-sram";
+			reg = <0x30600000 DT_SIZE_K(16)>;
+		};
+
+		sram_rtu0_core2_tcmA: memory@30800000 {
+			compatible = "mmio-sram";
+			reg = <0x30800000 DT_SIZE_K(64)>;
+		};
+		sram_rtu0_core2_tcmB: memory@30900000 {
+			compatible = "mmio-sram";
+			reg = <0x30900000 DT_SIZE_K(16)>;
+		};
+		sram_rtu0_core2_tcmC: memory@30a00000 {
+			compatible = "mmio-sram";
+			reg = <0x30a00000 DT_SIZE_K(16)>;
+		};
+		
+		sram_rtu0_core3_tcmA: memory@30c00000 {
+			compatible = "mmio-sram";
+			reg = <0x30c00000 DT_SIZE_K(64)>;
+		};
+		sram_rtu0_core3_tcmB: memory@30d00000 {
+			compatible = "mmio-sram";
+			reg = <0x30d00000 DT_SIZE_K(16)>;
+		};
+		sram_rtu0_core3_tcmC: memory@30e00000 {
+			compatible = "mmio-sram";
+			reg = <0x30e00000 DT_SIZE_K(16)>;
+		};
+
+		sram_rtu1_core0_tcmA: memory@34000000 {
+			compatible = "mmio-sram";
+			reg = <0x34000000 DT_SIZE_K(64)>;
+		};
+		sram_rtu1_core0_tcmB: memory@34100000 {
+			compatible = "mmio-sram";
+			reg = <0x34100000 DT_SIZE_K(16)>;
+		};
+		sram_rtu1_core0_tcmC: memory@34200000 {
+			compatible = "mmio-sram";
+			reg = <0x34200000 DT_SIZE_K(16)>;
+		};
+
+		sram_rtu1_core1_tcmA: memory@34400000 {
+			compatible = "mmio-sram";
+			reg = <0x34400000 DT_SIZE_K(64)>;
+		};
+		sram_rtu1_core1_tcmB: memory@34500000 {
+			compatible = "mmio-sram";
+			reg = <0x34500000 DT_SIZE_K(16)>;
+		};
+		sram_rtu1_core1_tcmC: memory@34600000 {
+			compatible = "mmio-sram";
+			reg = <0x34600000 DT_SIZE_K(16)>;
+		};
+
+		sram_rtu1_core2_tcmA: memory@34800000 {
+			compatible = "mmio-sram";
+			reg = <0x34800000 DT_SIZE_K(64)>;
+		};
+		sram_rtu1_core2_tcmB: memory@34900000 {
+			compatible = "mmio-sram";
+			reg = <0x34900000 DT_SIZE_K(16)>;
+		};
+		sram_rtu1_core2_tcmC: memory@34a00000 {
+			compatible = "mmio-sram";
+			reg = <0x34a00000 DT_SIZE_K(16)>;
+		};
+		
+		sram_rtu1_core3_tcmA: memory@34c00000 {
+			compatible = "mmio-sram";
+			reg = <0x34c00000 DT_SIZE_K(64)>;
+		};
+		sram_rtu1_core3_tcmB: memory@34d00000 {
+			compatible = "mmio-sram";
+			reg = <0x34d00000 DT_SIZE_K(16)>;
+		};
+		sram_rtu1_core3_tcmC: memory@34e00000 {
+			compatible = "mmio-sram";
+			reg = <0x34e00000 DT_SIZE_K(16)>;
+		};
+
+		sram_rtu0_code: memory@32100000 {
+				compatible = "mmio-sram";
+				reg = <0x32100000 DT_SIZE_M(7)>;
+		};
+		sram_rtu1_code: memory@36100000 {
+				compatible = "mmio-sram";
+				reg = <0x36100000 DT_SIZE_M(7)>;
 		};
 
 		uart0: uart@40170000 {
@@ -569,6 +672,24 @@
 			interrupts = <GIC_SPI 200 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
 			clocks = <&clock NXP_S32_SPI9_CLK>;
 			num-cs = <5>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		qspi0: qspi@42320000 {
+			compatible = "nxp,s32-qspi";
+			reg = <0x42320000 0x4000>;
+			clocks = <&clock NXP_S32_QSPI0_CLK>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+		
+		qspi1: qspi@42340000 {
+			compatible = "nxp,s32-qspi";
+			reg = <0x42340000 0x4000>;
+			clocks = <&clock NXP_S32_QSPI1_CLK>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
