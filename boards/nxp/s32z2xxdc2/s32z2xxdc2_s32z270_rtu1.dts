@@ -14,7 +14,7 @@
 
 	chosen {
 		zephyr,sram = &sram1;
-		zephyr,flash = &sram_code1;
+		zephyr,flash = &sram_rtu1_code;
 		zephyr,console = &uart0;
 		zephyr,shell-uart = &uart0;
 		zephyr,canbus = &can0;

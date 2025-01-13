@@ -7,8 +7,7 @@
 #define DT_DRV_COMPAT nxp_s32_qspi_nor
 
 #include <zephyr/logging/log.h>
-// LOG_MODULE_REGISTER(nxp_s32_qspi_nor, CONFIG_FLASH_LOG_LEVEL);
-LOG_MODULE_REGISTER(nxp_s32_qspi_nor, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(nxp_s32_qspi_nor, CONFIG_FLASH_LOG_LEVEL);
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/flash.h>
@@ -257,22 +256,11 @@ static const Qspi_Ip_InstrOpType nxp_s32_qspi_lut[][QSPI_LUT_ENTRY_SIZE] = {
 #if QSPI_ANY_INST_HAS_PROP_EQ(readoc, 0) || QSPI_ANY_INST_HAS_PROP_STATUS_NOT_OKAY(readoc)
 	[QSPI_SEQ_READ_1_1_1] =
 		{
-#if 1
 			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_CMD, QSPI_IP_LUT_PADS_1, SPI_NOR_CMD_READ_4B),
 			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_ADDR, QSPI_IP_LUT_PADS_1, 32U),
 			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_READ, QSPI_IP_LUT_PADS_1, 8U),
 			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_STOP, QSPI_IP_LUT_SEQ_END,
 				    QSPI_IP_LUT_SEQ_END),
-#else
-			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_CMD, QSPI_IP_LUT_PADS_1,
-				    SPI_NOR_CMD_4READ_4B),
-			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_ADDR, QSPI_IP_LUT_PADS_4, 32U),
-			// QSPI_LUT_OP(QSPI_IP_LUT_INSTR_MODE, QSPI_IP_LUT_PADS_4, 0U),
-			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_DUMMY, QSPI_IP_LUT_PADS_4, 4U),
-			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_READ, QSPI_IP_LUT_PADS_4, 8U),
-			QSPI_LUT_OP(QSPI_IP_LUT_INSTR_STOP, QSPI_IP_LUT_SEQ_END,
-				    QSPI_IP_LUT_SEQ_END),
-#endif
 		},
 #endif
 
@@ -650,51 +638,13 @@ static int nxp_s32_qspi_read(const struct device *dev, off_t offset, void *dest,
 
 	if (size) {
 		nxp_s32_qspi_lock(dev);
-#if 1
+
 		status = Qspi_Ip_Read(data->instance, (uint32_t)offset, (uint8_t *)dest,
 				      (uint32_t)size);
 		if (status != STATUS_QSPI_IP_SUCCESS) {
 			LOG_ERR("Failed to read %zu bytes at 0x%lx (%d)", size, offset, status);
 			ret = -EIO;
 		}
-#else
-		volatile QuadSPI_Type *base_addr = (QuadSPI_Type *)(0x42320000);
-		const uint8_t kSequenceIdRead = 0;
-
-		// Clear the RX Fifos
-		uint32_t mcr = base_addr->MCR;
-		mcr |= (1 << 10); // CLR_RXF
-		base_addr->MCR = mcr;
-		LOG_DBG("MCR value: %0x", base_addr->MCR);
-
-		LOG_DBG("FSMSTAT value: %0x", base_addr->FSMSTAT);
-
-		// Set the reference address
-		base_addr->SFAR = offset;
-
-		// Write the Sequence/LUT and size to read
-		uint32_t ipcr = ((size & 0xffff) << 0);
-		ipcr |= (kSequenceIdRead << 24);
-		base_addr->IPCR = ipcr;
-		if (base_addr->IPCR != ipcr) {
-			LOG_ERR("Failed to write the IPCR register. exp 0x%0x, act 0x%0x", ipcr,
-				base_addr->IPCR);
-			LOG_ERR("IPS ERROR 0x%0x", base_addr->IPSERROR);
-			return -ENOTCONN;
-		}
-
-		// Wait for the transaction to complete
-		for (;;) {
-			bool is_busy = ((base_addr->SR & BIT(0)) != 0);
-			bool is_finished = ((base_addr->FR & BIT(0)) != 0);
-			if (is_busy && is_finished) {
-				break;
-			}
-		}
-
-		// Get the data
-		memcpy(dest, base_addr->RBDR, size);
-#endif
 
 		nxp_s32_qspi_unlock(dev);
 	}
@@ -1000,7 +950,6 @@ static int nxp_s32_qspi_init(const struct device *dev)
 		LOG_ERR("Fail to init memory device %d (%d)", data->instance, status);
 		return -EIO;
 	}
-
 #if !defined(CONFIG_FLASH_NXP_S32_QSPI_NOR_SFDP_RUNTIME)
 
 	uint8_t jedec_id[JESD216_READ_ID_LEN];
@@ -1030,23 +979,6 @@ static int nxp_s32_qspi_init(const struct device *dev)
 		return ret;
 	}
 #endif /* !CONFIG_FLASH_NXP_S32_QSPI_NOR_SFDP_RUNTIME */
-
-	uint8_t tmp_data[48] = {};
-	uint32_t addr = 0x000;
-	(void)nxp_s32_qspi_read(dev, addr, (uint8_t *)&tmp_data[0], sizeof(tmp_data));
-	for (int i = 0; i < 12; i++) {
-		int index = 4 * i;
-		LOG_DBG("addr 0x%x: %02x %02x %02x %02x", (addr + index), tmp_data[index],
-			tmp_data[index + 1], tmp_data[index + 2], tmp_data[index + 3]);
-	}
-
-#if 0
-	addr = 0xc0;
-	(void)nxp_s32_qspi_sfdp_read(dev, addr, (uint8_t *)&tmp_data[0], sizeof(tmp_data));
-	for (int i = 0; i < 16; i++) {
-		LOG_DBG("sfdp 0x%x: %08x", (addr + (i * 4)), tmp_data[i]);
-	}
-#endif
 
 	return ret;
 }
