@@ -8,6 +8,7 @@ zephyr_library_sources(
   irq_init.c
   reboot.c
   reset.S
+  scb.c
   stacks.c
   tcm.c
   vector_table.S
