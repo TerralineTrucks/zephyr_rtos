@@ -191,7 +191,6 @@ int stream_flash_buffered_write(struct stream_flash_ctx *ctx, const uint8_t *dat
 				size_t len, bool flush)
 {
 	int rc = 0;
-	size_t buf_empty_bytes = ctx->buf_len - ctx->buf_bytes;
 	size_t processed = 0;
 
 	if (!ctx) {
@@ -215,7 +214,7 @@ int stream_flash_buffered_write(struct stream_flash_ctx *ctx, const uint8_t *dat
 	// context becomes full
 	while (processed < len) {
 		size_t buf_remaining = ctx->buf_len - ctx->buf_bytes;
-		size_t bytes_to_copy = MIN(len, buf_remaining);
+		size_t bytes_to_copy = MIN((len - processed), buf_remaining);
 		(void)memcpy(&ctx->buf[ctx->buf_bytes], &data[processed], bytes_to_copy);
 		ctx->buf_bytes += bytes_to_copy;
 		processed += bytes_to_copy;
