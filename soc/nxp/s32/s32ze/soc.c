@@ -215,6 +215,15 @@ static int soc_platform_init(void)
 	soc_partition_sram_init(0x761E0000, 0x40000);
 	soc_partition_sram_init(0x761F0000, 0x80000);
 
+	/* Perform ECC Initialization on the remaining RTU 0 Code SRAM */
+	// soc_partition_sram_init(0x760C0000, 0x100000);
+	soc_partition_sram_init(0x760D0000, 0x100000);
+	soc_partition_sram_init(0x760E0000, 0x100000);
+	soc_partition_sram_init(0x760F0000, 0x100000);
+	soc_partition_sram_init(0x76240000, 0x100000);
+	soc_partition_sram_init(0x76250000, 0x100000);
+	soc_partition_sram_init(0x76260000, 0x100000);
+
 #if 0 // TODO: Debug and configure this for RTU1 use.
 	/* Perform ECC Initialization on the RTU 1 Data SRAM */
 	soc_partition_sram_init(0x769D0000, 0x40000);
