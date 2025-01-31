@@ -69,6 +69,10 @@ SECTION_FUNC(TEXT, z_arm_context_switch)
 	mcr 15, 0, r3, c13, c0, 2
 #endif
 
+#if defined(CONFIG_FPU_SHARING)
+	fpu_exc_exit
+#endif
+
 	ldr r2, =_thread_offset_to_callee_saved
 	add r2, r0, r2
 	ldm r2, {r4-r11, sp, lr}
@@ -99,7 +103,7 @@ SECTION_FUNC(TEXT, z_arm_context_switch)
  *
  */
 SECTION_FUNC(TEXT, z_arm_svc)
-    z_arm_cortex_ar_enter_exc
+    z_arm_cortex_ar_enter_exc MODE_SVC
 
    /* Get SVC number */
     cps #MODE_SVC

@@ -230,7 +230,7 @@ spurious_continue:
 	ldr r1, =z_arm_int_exit
 	bx r1
 
-#else
+#else /* !CONFIG_USE_SWITCH */
 /**
  *
  * @brief Wrapper around ISRs when inserted in software ISR table
@@ -244,7 +244,7 @@ spurious_continue:
  */
 SECTION_FUNC(TEXT, _isr_wrapper)
 	sub lr, #4
-	z_arm_cortex_ar_enter_exc
+	z_arm_cortex_ar_enter_exc MODE_IRQ
 
 	/* Increment interrupt nesting count */
 	get_cpu r2
@@ -253,6 +253,7 @@ SECTION_FUNC(TEXT, _isr_wrapper)
 	str r0, [r2, #___cpu_t_nested_OFFSET]
 
 	/* If not nested: switch to IRQ stack and save current sp on it. */
+	// TODO
 	cmp r0, #1
 	bhi 1f
 	mov r0, sp
@@ -294,7 +295,7 @@ _idle_state_cleared:
 	bl z_soc_irq_get_active
 #endif /* !CONFIG_ARM_CUSTOM_INTERRUPT_CONTROLLER */
 
-	push {r0, r1}
+	//push {r0, r1} // TODO
 	lsl r0, r0, #3	/* table is 8-byte wide */
 
 	/*
@@ -319,7 +320,7 @@ _idle_state_cleared:
 
 spurious_continue:
 	/* Signal end-of-interrupt */
-	pop {r0, r1}
+	//pop {r0, r1} // TODO
 #if !defined(CONFIG_ARM_CUSTOM_INTERRUPT_CONTROLLER)
 	bl arm_gic_eoi
 #else
@@ -342,6 +343,7 @@ z_arm_cortex_ar_irq_done:
 	bhi __EXIT_INT
 
 	/* retrieve pointer to the current thread */
+	// TODO
 	pop {r0}
 	cps #MODE_SYS
 	mov sp, r0

@@ -109,6 +109,11 @@ void arch_new_thread(struct k_thread *thread, k_thread_stack_t *stack,
 	memset(iframe, 0, sizeof(struct __fpu_sf));
 #endif
 
+#if defined(CONFIG_USE_SWITCH)
+	// iframe = (struct __basic_sf *)((uintptr_t)iframe - 4);
+	//*(uint32_t *)iframe = iframe;
+#endif
+
 	thread->callee_saved.psp = (uint32_t)iframe;
 	thread->arch.basepri = 0;
 

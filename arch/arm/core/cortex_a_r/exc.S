@@ -33,7 +33,7 @@ _ASM_FILE_PROLOGUE
 
 #if defined(CONFIG_FPU_SHARING)
 GTEXT(z_arm_fault_undef_instruction_fp)
-#endif
+#endif /* defined(CONFIG_FPU_SHARING) */
 GTEXT(z_arm_fault_undef_instruction)
 GTEXT(z_arm_fault_prefetch)
 GTEXT(z_arm_fault_data)
@@ -41,6 +41,11 @@ GTEXT(z_arm_fault_data)
 GTEXT(z_arm_undef_instruction)
 GTEXT(z_arm_prefetch_abort)
 GTEXT(z_arm_data_abort)
+
+#if defined(CONFIG_FPU_SHARING)
+GTEXT(z_arm_cortex_ar_exit_exc)
+#endif /* defined(CONFIG_FPU_SHARING) */
+
 
 #ifndef CONFIG_USE_SWITCH
 
@@ -54,20 +59,8 @@ GTEXT(z_arm_data_abort)
 	sub sp, #24
 
 #if defined(CONFIG_FPU_SHARING)
-	sub sp, #___fpu_t_SIZEOF
-
-	vmrs r1, fpexc
-	mov r0, #FPEXC_EN
-	vmsr fpexc, r0
-	vmrs r0, fpscr
-
-	mov r2, sp
-	vstmia r2!, {s0-s15}
-#ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
-	vstmia r2!, {d16-d31}
-#endif
-	stm r2, {r0, r1}
-#endif
+	fpu_exc_enter
+#endif /* defined(CONFIG_FPU_SHARING) */
 
 #if defined(CONFIG_EXTRA_EXCEPTION_INFO)
 	/* Pointer to extra esf info */
@@ -84,9 +77,9 @@ GTEXT(z_arm_data_abort)
 
 	mov r0, sp
 	mov sp, r1
-#else
+#else /* defined(CONFIG_EXTRA_EXCEPTION_INFO) */
 	mov r0, sp
-#endif
+#endif /* defined(CONFIG_EXTRA_EXCEPTION_INFO) */
 
 	/* Increment exception nesting count */
 	get_cpu r2
@@ -100,7 +93,7 @@ GTEXT(z_arm_data_abort)
 #if defined(CONFIG_EXTRA_EXCEPTION_INFO)
 	add sp, #___extra_esf_info_t_SIZEOF
 	add sp, #___callee_saved_t_SIZEOF
-#endif
+#endif /* defined(CONFIG_EXTRA_EXCEPTION_INFO) */
 .endm
 
 /**
@@ -138,23 +131,13 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_undef_instruction)
 
 #if defined(CONFIG_FPU_SHARING)
 	sub sp, #___fpu_t_SIZEOF
-
 	bl z_arm_fault_undef_instruction_fp
 	cmp r0, #0
 	beq z_arm_exc_exit
+	add sp, #___fpu_t_SIZEOF
 
-	vmrs r1, fpexc
-	mov r0, #FPEXC_EN
-	vmsr fpexc, r0
-	vmrs r0, fpscr
-
-	mov r2, sp
-	vstmia r2!, {s0-s15}
-#ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
-	vstmia r2!, {d16-d31}
-#endif
-	stm r2, {r0, r1}
-#endif
+	fpu_exc_enter
+#endif /* defined(CONFIG_FPU_SHARING) */
 
 #if defined(CONFIG_EXTRA_EXCEPTION_INFO)
 	/* Pointer to extra esf info */
@@ -171,9 +154,9 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_undef_instruction)
 
 	mov r0, sp
 	mov sp, r1
-#else
+#else /* defined(CONFIG_EXTRA_EXCEPTION_INFO) */
 	mov r0, sp
-#endif
+#endif /* defined(CONFIG_EXTRA_EXCEPTION_INFO) */
 
 	bl z_arm_fault_undef_instruction
 	exception_exit
@@ -201,9 +184,9 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_prefetch_abort)
 
 #if defined(CONFIG_FPU_SHARING)
 #define FPU_SF_SIZE	___fpu_t_SIZEOF
-#else
+#else /* defined(CONFIG_FPU_SHARING) */
 #define FPU_SF_SIZE	0
-#endif
+#endif /* defined(CONFIG_FPU_SHARING) */
 
 /**
  * @brief Data abort exception handler
@@ -236,7 +219,8 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_data_abort)
 
 	b z_arm_exc_exit
 
-#else
+#else /* CONFIG_USE_SWITCH */
+
 /**
  * @brief Undefined instruction exception handler
  *
@@ -256,7 +240,11 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_undef_instruction)
 	subne lr, #2	/* Thumb (T_BIT) */
 	pop {r0}
 
-	z_arm_cortex_ar_enter_exc
+debug_undef_loop:
+	ldr r0, =debug_undef_loop
+	bx r0
+
+	z_arm_cortex_ar_enter_exc MODE_UND
 	bl z_arm_fault_undef_instruction
 	b z_arm_cortex_ar_exit_exc
 
@@ -272,7 +260,12 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_prefetch_abort)
 	 * prefetch abort exceptions.
 	 */
 	sub lr, #4
-	z_arm_cortex_ar_enter_exc
+
+debug_prefetch_loop:
+	ldr r0, =debug_prefetch_loop
+	bx r0
+
+	z_arm_cortex_ar_enter_exc MODE_ABT
 	bl z_arm_fault_prefetch
 	b z_arm_cortex_ar_exit_exc
 
@@ -286,8 +279,12 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_prefetch_abort)
 SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_data_abort)
 	sub lr, #8
 
-	z_arm_cortex_ar_enter_exc
+debug_abort_loop:
+	ldr r0, =debug_abort_loop
+	bx r0
+
+	z_arm_cortex_ar_enter_exc MODE_ABT
 	bl z_arm_fault_data
 	b z_arm_cortex_ar_exit_exc
 
-#endif
+#endif /* CONFIG_USE_SWITCH */
