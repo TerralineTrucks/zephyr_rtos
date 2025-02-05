@@ -42,6 +42,10 @@ GTEXT(z_arm_undef_instruction)
 GTEXT(z_arm_prefetch_abort)
 GTEXT(z_arm_data_abort)
 
+#if defined(CONFIG_FPU_SHARING)
+GTEXT(z_arm_cortex_ar_exit_exc)
+#endif
+
 #ifndef CONFIG_USE_SWITCH
 
 .macro exception_entry mode
