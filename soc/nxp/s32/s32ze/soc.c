@@ -171,9 +171,88 @@ static int soc_init(void)
 	return 0;
 }
 
-#ifdef CONFIG_MCUBOOT
+static int soc_rtu_start_cores(int rtu_index)
+{
+	uint32_t current_core = MPIDR_TO_CORE(GET_MPIDR());
+
+	const uint32_t rtu_gpr_map[2] = {RTU0_GPR_BASE, RTU1_GPR_BASE};
+	const uint32_t rgm_rtu_map[2] = {RGM_RTU0_OFFSET, RGM_RTU1_OFFSET};
+	const uint32_t me_rtu_map[2] = {ME_RTU0_OFFSET, ME_RTU1_OFFSET};
+	const uint32_t me_core_map[4] = {ME_CORE0_OFFSET, ME_CORE1_OFFSET, ME_CORE2_OFFSET,
+					 ME_CORE3_OFFSET};
+
+	uint32_t me_rtu_reg_base = MC_ME_BASE + me_rtu_map[rtu_index];
+	uint32_t rgm_rtu_reg_base = MC_RGM_BASE + rgm_rtu_map[rtu_index];
+
+	uint32_t rtu_gpr_conf = rtu_gpr_map[rtu_index] + RTU_GPR_CORE_CONF_OFFSET;
+	uint32_t rtu_gpr_halt = rtu_gpr_map[rtu_index] + RTU_GPR_HALT_OFFSET;
+	uint32_t rtu_gpr_isolation = rtu_gpr_map[rtu_index] + RTU_GPR_ISOLATION_OFFSET;
+	uint32_t rtu_gpr_iso_status = rtu_gpr_map[rtu_index] + RTU_GPR_ISO_STATUS_OFFSET;
+
+	/* Only the primary can initiate the other cores. */
+	if (current_core != 0) {
+		return 0;
+	}
+
+	extern void __start(void);
+	extern void __start_t32(void);
+	uint32_t start_addr = (uint32_t)__start;
+	uint32_t rtu_conf = *(uint32_t *)rtu_gpr_conf;
+	if ((rtu_conf & RTU_GPR_CONF_THUMB_MASK) != 0) {
+		start_addr = (uint32_t)__start_t32;
+	}
+
+	/* CPU 0 is always the primary, skip it */
+	for (int i = 1; i < arch_num_cpus(); i++) {
+		uint32_t me_core_reg_base = me_rtu_reg_base + me_core_map[i];
+		uint32_t me_core_conf = me_core_reg_base + ME_CORE_CONF_OFFSET;
+		uint32_t me_core_upd = me_core_reg_base + ME_CORE_UPD_OFFSET;
+		uint32_t me_core_stat = me_core_reg_base + ME_CORE_STAT_OFFSET;
+		uint32_t me_core_addr = me_core_reg_base + ME_CORE_ADDR_OFFSET;
+		uint32_t rgm_core_reset = rgm_rtu_reg_base;
+		uint32_t rgm_reset_mask = RGM_CORE_RESET_MASK(i);
+
+		/* Isolate the core */
+		REG_SET_MASK(rtu_gpr_isolation, RTU_GPR_ISOLATION_MASK(i));
+		REG_CHECK_MASK(rtu_gpr_iso_status, RTU_GPR_ISO_STATUS_MASK(i),
+			       RTU_GPR_ISO_STATUS_MASK(i));
+
+		/* Hold the core in reset */
+		REG_SET_MASK(rgm_core_reset, rgm_reset_mask);
+
+		/* Set the halt bit for the core */
+		REG_SET_MASK(rtu_gpr_halt, RTU_GPR_HALT_MASK(i));
+
+		/* Configure the boot address */
+		REG_WRITE32(me_core_addr, start_addr);
+
+		/* Release the core reset */
+		REG_CLEAR_MASK(rgm_core_reset, rgm_reset_mask);
+		REG_CHECK_MASK(rgm_core_reset, rgm_reset_mask, 0x0);
+
+		/* Enable the clock */
+		REG_WRITE32(me_core_conf, 0x1);
+		REG_SET_MASK(me_core_upd, 0x1);
+		REG_WRITE32(MC_ME_BASE, 0x5AF0);
+		REG_WRITE32(MC_ME_BASE, 0xA50F);
+
+		/* Confirm the values */
+		REG_CHECK_MASK(me_core_upd, 0x1, 0x0);
+		REG_CHECK_MASK(me_core_stat, 0x1, 0x1);
+
+		/* Remove the core isolation hold */
+		REG_CLEAR_MASK(rtu_gpr_isolation, RTU_GPR_ISOLATION_MASK(i));
+		REG_CHECK_MASK(rtu_gpr_iso_status, RTU_GPR_ISO_STATUS_MASK(i), 0x0);
+
+		/* Clear the halt bit for the core */
+		REG_CLEAR_MASK(rtu_gpr_halt, RTU_GPR_HALT_MASK(i));
+	}
+	return 0;
+}
+
 static int soc_platform_init(void)
 {
+#ifdef CONFIG_MCUBOOT
 #ifdef CONFIG_CLOCK_CONTROL_NXP_S32
 	/* If this element is responsible for the clock configuration then the
 	 * reset must include the RTU1 partition, otherwise multiple clock element
@@ -247,10 +326,14 @@ static int soc_platform_init(void)
 	soc_partition_sram_init(0x76A50000, 0x100000);
 	soc_partition_sram_init(0x76A60000, 0x100000);
 #endif
+#else /* CONFIG_MCUBOOT */
+#if CONFIG_MP_MAX_NUM_CPUS > 1
+	return soc_rtu_start_cores(CONFIG_NXP_S32_RTU_INDEX);
+#endif
+#endif /* CONFIG_MCUBOOT */
 	return 0;
 }
 
 SYS_INIT(soc_platform_init, EARLY, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
-#endif /* CONFIG_MCUBOOT */
 
 SYS_INIT(soc_init, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
