@@ -143,7 +143,7 @@ void arch_cpu_start(int cpu_num, k_thread_stack_t *stack, int sz, arch_cpustart_
 
 	/* Wait secondary cores up, see arch_secondary_cpu_init */
 	while (arm_cpu_boot_params.fn) {
-		// wfe();
+		wfe();
 	}
 
 	cpu_map[cpu_num] = cpu_mpid;
@@ -196,7 +196,7 @@ void arch_secondary_cpu_init(void)
 	arm_cpu_boot_params.fn = NULL;
 	barrier_dsync_fence_full();
 
-	// sev();
+	sev();
 
 	fn(arg);
 }

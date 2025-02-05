@@ -109,7 +109,7 @@ static inline void z_arm_floating_point_init(void)
 	__set_CPACR(reg_val);
 	barrier_isync_fence_full();
 
-	// #if !defined(CONFIG_FPU_SHARING)
+#if !defined(CONFIG_FPU_SHARING)
 	/*
 	 * FPEXC: Floating-Point Exception Control register
 	 * comp. ARM Architecture Reference Manual, ARMv7-A and ARMv7-R edition,
@@ -130,7 +130,7 @@ static inline void z_arm_floating_point_init(void)
 	 * [29..00]    = Subarchitecture defined -> not relevant here.
 	 */
 	__set_FPEXC(FPEXC_EN);
-// #endif
+#endif
 #endif
 }
 

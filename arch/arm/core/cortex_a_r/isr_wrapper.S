@@ -253,7 +253,6 @@ SECTION_FUNC(TEXT, _isr_wrapper)
 	str r0, [r2, #___cpu_t_nested_OFFSET]
 
 	/* If not nested: switch to IRQ stack and save current sp on it. */
-	// TODO
 	cmp r0, #1
 	bhi 1f
 	mov r0, sp
@@ -343,7 +342,6 @@ z_arm_cortex_ar_irq_done:
 	bhi __EXIT_INT
 
 	/* retrieve pointer to the current thread */
-	// TODO
 	pop {r0}
 	cps #MODE_SYS
 	mov sp, r0

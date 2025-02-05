@@ -220,7 +220,6 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_data_abort)
 	b z_arm_exc_exit
 
 #else /* CONFIG_USE_SWITCH */
-
 /**
  * @brief Undefined instruction exception handler
  *
@@ -240,10 +239,6 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_undef_instruction)
 	subne lr, #2	/* Thumb (T_BIT) */
 	pop {r0}
 
-debug_undef_loop:
-	ldr r0, =debug_undef_loop
-	bx r0
-
 	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_undef_instruction
 	b z_arm_cortex_ar_exit_exc
@@ -261,10 +256,6 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_prefetch_abort)
 	 */
 	sub lr, #4
 
-debug_prefetch_loop:
-	ldr r0, =debug_prefetch_loop
-	bx r0
-
 	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_prefetch
 	b z_arm_cortex_ar_exit_exc
@@ -278,10 +269,6 @@ debug_prefetch_loop:
  */
 SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_data_abort)
 	sub lr, #8
-
-debug_abort_loop:
-	ldr r0, =debug_abort_loop
-	bx r0
 
 	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_data
