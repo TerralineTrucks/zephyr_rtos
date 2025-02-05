@@ -23,6 +23,8 @@
 
 _ASM_FILE_PROLOGUE
 
+GTEXT(__start_t32_workaround)
+GTEXT(__start_t32)
 GTEXT(z_arm_reset)
 GDATA(z_interrupt_stacks)
 GDATA(z_arm_svc_stack)
@@ -46,17 +48,14 @@ GTEXT(z_arm_platform_init)
  * setting up the system for running C code.
  *
  */
-SECTION_SUBSEC_FUNC(TEXT, _reset_section, z_arm_reset)
-SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
-    .align 8
+
 #if defined(CONFIG_AARCH32_ARMV8_R)
+/* NOP sled of 8 (2 bytes each) since the Boot ROM will actually start it 12 bytes
+ * before the indicated "Start" address. The start address needs to be 8 aligned. */
+SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start_t32_workaround)
+    .align 8
     .syntax unified
-
-#if defined(CONFIG_MCUBOOT)
     .thumb
-
-    /* NOP sled of 8 (2 bytes each) since the Boot ROM will actually start it 12 bytes
-     * before the indicated "Start" address. The start address needs to be 8 aligned. */
     nop
     nop
     nop // Actual start of execution
@@ -74,14 +73,17 @@ SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start_t32)
     nop
 
     /* Leave T32 (thumb) mode for A32 */
-    ldr r0, =Start_A32
+    ldr r0, =__start
     blx r0
     nop
     nop
-#endif /* CONFIG_MCUBOOT */
 
-Start_A32:
     .arm
+#endif /* defined(CONFIG_AARCH32_ARMV8_R) */
+
+SECTION_SUBSEC_FUNC(TEXT, _reset_section, z_arm_reset)
+SECTION_SUBSEC_FUNC(TEXT, _reset_section, __start)
+#if defined(CONFIG_AARCH32_ARMV8_R)
     /* Check if we are starting in HYP mode */
     mrs r0, cpsr
     and r0, r0, #MODE_MASK
@@ -236,29 +238,24 @@ EL1_Reset_Handler:
     ldr r0, =arm_cpu_boot_params
 #if CONFIG_MP_MAX_NUM_CPUS > 1
     get_cpu_id r1
-
-    ldrex r2, [r0, #BOOT_PARAM_MPID_OFFSET]
-    cmp r2, #-1
-    bne 1f
-    strex r3, r1, [r0, #BOOT_PARAM_MPID_OFFSET]
-    cmp r3, #0
+    cmp r1, #0
     beq _primary_core
 
-1:
+_non_primary_core:
+    /* Spin here until the primary core releases this core. */
     dmb ld
     ldr r2, [r0, #BOOT_PARAM_MPID_OFFSET]
     cmp r1, r2
-    bne 1b
+    bne _non_primary_core
 
     /* we can now move on */
-    ldr r4, =arch_secondary_cpu_init
     ldr r5, [r0, #BOOT_PARAM_FIQ_SP_OFFSET]
     ldr r6, [r0, #BOOT_PARAM_IRQ_SP_OFFSET]
     ldr r7, [r0, #BOOT_PARAM_ABT_SP_OFFSET]
     ldr r8, [r0, #BOOT_PARAM_UDF_SP_OFFSET]
     ldr r9, [r0, #BOOT_PARAM_SVC_SP_OFFSET]
     ldr r10, [r0, #BOOT_PARAM_SYS_SP_OFFSET]
-    b 2f
+    b _configure_stack
 
 _primary_core:
 #endif
@@ -270,7 +267,7 @@ _primary_core:
     ldr r9, =(z_arm_svc_stack + CONFIG_ARMV7_SVC_STACK_SIZE)
     ldr r10, =(z_arm_sys_stack + CONFIG_ARMV7_SYS_STACK_SIZE)
 
-2:
+_configure_stack:
     /*
      * Configure stack.
      */
@@ -313,5 +310,14 @@ _primary_core:
     bl z_arm_tcm_disable_ecc
 #endif
 
+#if CONFIG_MP_MAX_NUM_CPUS > 1
+    get_cpu_id r1
+    cmp r1, #0
+    beq _primary_core_prep_c
+    ldr r4, =arch_secondary_cpu_init
+    b _jump_to_core_prep
+#endif
+_primary_core_prep_c:
     ldr r4, =z_prep_c
+_jump_to_core_prep:
     bx r4

@@ -65,15 +65,7 @@ BUILD_ASSERT(offsetof(struct boot_params, udf_sp) == BOOT_PARAM_UDF_SP_OFFSET);
 BUILD_ASSERT(offsetof(struct boot_params, svc_sp) == BOOT_PARAM_SVC_SP_OFFSET);
 BUILD_ASSERT(offsetof(struct boot_params, sys_sp) == BOOT_PARAM_SYS_SP_OFFSET);
 
-volatile struct boot_params arm_cpu_boot_params = {
-	.mpid = -1,
-	.irq_sp = (char *)(z_interrupt_stacks + CONFIG_ISR_STACK_SIZE),
-	.fiq_sp = (char *)(z_arm_fiq_stack + CONFIG_ARMV7_FIQ_STACK_SIZE),
-	.abt_sp = (char *)(z_arm_abort_stack + CONFIG_ARMV7_EXCEPTION_STACK_SIZE),
-	.udf_sp = (char *)(z_arm_undef_stack + CONFIG_ARMV7_EXCEPTION_STACK_SIZE),
-	.svc_sp = (char *)(z_arm_svc_stack + CONFIG_ARMV7_SVC_STACK_SIZE),
-	.sys_sp = (char *)(z_arm_sys_stack + CONFIG_ARMV7_SYS_STACK_SIZE),
-};
+volatile struct boot_params arm_cpu_boot_params;
 
 static const uint32_t cpu_node_list[] = {
 	DT_FOREACH_CHILD_STATUS_OKAY_SEP(DT_PATH(cpus), DT_REG_ADDR, (,))};
