@@ -58,19 +58,7 @@ GTEXT(z_arm_cortex_ar_exit_exc)
 	sub sp, #24
 
 #if defined(CONFIG_FPU_SHARING)
-	sub sp, #___fpu_t_SIZEOF
-
-	vmrs r1, fpexc
-	mov r0, #FPEXC_EN
-	vmsr fpexc, r0
-	vmrs r0, fpscr
-
-	mov r2, sp
-	vstmia r2!, {s0-s15}
-#ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
-	vstmia r2!, {d16-d31}
-#endif
-	stm r2, {r0, r1}
+	fpu_exc_enter
 #endif
 
 #if defined(CONFIG_EXTRA_EXCEPTION_INFO)
@@ -147,17 +135,8 @@ SECTION_SUBSEC_FUNC(TEXT, __exc, z_arm_undef_instruction)
 	cmp r0, #0
 	beq z_arm_exc_exit
 
-	vmrs r1, fpexc
-	mov r0, #FPEXC_EN
-	vmsr fpexc, r0
-	vmrs r0, fpscr
-
-	mov r2, sp
-	vstmia r2!, {s0-s15}
-#ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
-	vstmia r2!, {d16-d31}
-#endif
-	stm r2, {r0, r1}
+	add sp, #___fpu_t_SIZEOF
+	fpu_exc_enter
 #endif
 
 #if defined(CONFIG_EXTRA_EXCEPTION_INFO)

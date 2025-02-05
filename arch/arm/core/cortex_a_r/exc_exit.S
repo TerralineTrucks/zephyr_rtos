@@ -240,6 +240,10 @@ SECTION_SUBSEC_FUNC(TEXT, _HandlerModeExit, z_arm_cortex_ar_exit_exc)
 	sub r1, r1, #1
 	strb r1, [r2, #_cpu_offset_to_exc_depth]
 
+#if defined(CONFIG_FPU_SHARING)
+	fpu_exc_exit
+#endif
+
 	/*
 	 * Restore r0-r3, r12, lr, lr_und and spsr_und from the exception stack
 	 * and return to the current thread.

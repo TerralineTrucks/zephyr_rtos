@@ -26,6 +26,24 @@
         and \rreg0, #TPIDRURO_CURR_CPU
 .endm
 
+.macro fpu_exc_enter
+#if defined(CONFIG_FPU_SHARING)
+	sub sp, #___fpu_t_SIZEOF
+
+	vmrs r1, fpexc
+	mov r0, #FPEXC_EN
+	vmsr fpexc, r0
+	vmrs r0, fpscr
+
+	mov r2, sp
+	vstmia r2!, {s0-s15}
+#ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
+	vstmia r2!, {d16-d31}
+#endif /* CONFIG_VFP_FEATURE_REGS_S64_D32 */
+	stm r2, {r0, r1}
+#endif /* defined(CONFIG_FPU_SHARING) */
+.endm
+
 .macro fpu_exc_exit
 #if defined(CONFIG_FPU_SHARING)
 	/*
@@ -44,13 +62,12 @@
 	cmp r0, #0
 	moveq r1, #0
 	streq r1, [r2, #___cpu_t_fp_ctx_OFFSET]
-	b vfp_exit\@
 
 vfp_restore\@:
 	add r3, sp, #___fpu_sf_t_fpscr_OFFSET
 	ldm r3, {r1, r2}
 	tst r2, #FPEXC_EN
-	beq vfp_exit\@
+	beq vfp_disable_exit\@
 
 	vmsr fpexc, r2
 	vmsr fpscr, r1
@@ -59,12 +76,14 @@ vfp_restore\@:
 #ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
 	vldmia r3!, {d16-d31}
 #endif
+	b vfp_exit\@
 
-vfp_exit\@:
-	/* Leave the VFP disabled when leaving */
+vfp_disable_exit\@:
+	/* Disable the VFP disabled when leaving */
 	mov r1, #0
 	vmsr fpexc, r1
-
+	
+vfp_exit\@:
 	add sp, sp, #___fpu_t_SIZEOF
 #endif
 .endm
@@ -78,6 +97,10 @@ vfp_exit\@:
 	cps #MODE_SYS
 	stmdb sp, {r0-r3, r12, lr}^
 	sub sp, #24
+
+#if defined(CONFIG_FPU_SHARING)
+	fpu_exc_enter
+#endif
 
 	/* TODO: EXTRA_EXCEPTION_INFO */
 	mov r0, sp

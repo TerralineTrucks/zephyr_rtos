@@ -178,12 +178,12 @@ bool z_arm_fault_undef_instruction_fp(void)
 		if (((_current_cpu->nested == 2)
 				&& (_current->base.user_options & K_FP_REGS))
 			|| ((_current_cpu->nested > 2)
-				&& (spill_esf->undefined & FPEXC_EN))) {
+				&& (spill_esf->fpexc & FPEXC_EN))) {
 			/*
 			 * Spill VFP registers to specified exception stack
 			 * frame
 			 */
-			spill_esf->undefined |= FPEXC_EN;
+			spill_esf->fpexc |= FPEXC_EN;
 			spill_esf->fpscr = __get_FPSCR();
 			z_arm_fpu_caller_save(spill_esf);
 		}
@@ -213,7 +213,7 @@ bool z_arm_fault_undef_instruction(struct arch_esf *esf)
 	 * This is a true undefined instruction and we will be crashing
 	 * so save away the VFP registers.
 	 */
-	esf->fpu.undefined = __get_FPEXC();
+	esf->fpu.fpexc = __get_FPEXC();
 	esf->fpu.fpscr = __get_FPSCR();
 	z_arm_fpu_caller_save(&esf->fpu);
 #endif

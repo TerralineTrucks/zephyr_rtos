@@ -107,6 +107,7 @@ void arch_new_thread(struct k_thread *thread, k_thread_stack_t *stack,
 	iframe = (struct __basic_sf *)
 		((uintptr_t)iframe - sizeof(struct __fpu_sf));
 	memset(iframe, 0, sizeof(struct __fpu_sf));
+	((struct __fpu_sf*)iframe)->fpexc = FPEXC_EN;
 #endif
 
 	thread->callee_saved.psp = (uint32_t)iframe;
