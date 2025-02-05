@@ -103,7 +103,7 @@ SECTION_FUNC(TEXT, z_arm_context_switch)
  *
  */
 SECTION_FUNC(TEXT, z_arm_svc)
-    z_arm_cortex_ar_enter_exc MODE_SVC
+    z_arm_cortex_ar_enter_exc
 
    /* Get SVC number */
     cps #MODE_SVC

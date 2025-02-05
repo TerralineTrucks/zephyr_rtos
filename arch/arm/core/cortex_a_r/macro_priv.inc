@@ -92,14 +92,14 @@ vfp_exit\@:
 .endm
 
 #ifdef CONFIG_USE_SWITCH
-.macro z_arm_cortex_ar_enter_exc mode
-	/*
-	 * Store r0-r3, r12, lr into the stack to construct an exception
+.macro z_arm_cortex_ar_enter_exc
+	/* Store the user SP and CSPR into the stack of the system mode */
+	srsdb sp!, #MODE_SYS
+	cps #MODE_SYS
+	/* Store r0-r3, r12, lr into the stack to construct an exception
 	 * stack frame.
 	 */
-	srsdb sp!, #\mode
-	stmdb sp, {r0-r3, r12, lr}^
-	sub sp, #24
+	push {r0-r3, r12, lr}
 
 #if defined(CONFIG_FPU_SHARING)
 	fpu_exc_enter

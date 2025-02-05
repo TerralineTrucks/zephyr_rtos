@@ -244,7 +244,7 @@ debug_undef_loop:
 	ldr r0, =debug_undef_loop
 	bx r0
 
-	z_arm_cortex_ar_enter_exc MODE_UND
+	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_undef_instruction
 	b z_arm_cortex_ar_exit_exc
 
@@ -265,7 +265,7 @@ debug_prefetch_loop:
 	ldr r0, =debug_prefetch_loop
 	bx r0
 
-	z_arm_cortex_ar_enter_exc MODE_ABT
+	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_prefetch
 	b z_arm_cortex_ar_exit_exc
 
@@ -283,7 +283,7 @@ debug_abort_loop:
 	ldr r0, =debug_abort_loop
 	bx r0
 
-	z_arm_cortex_ar_enter_exc MODE_ABT
+	z_arm_cortex_ar_enter_exc
 	bl z_arm_fault_data
 	b z_arm_cortex_ar_exit_exc
 

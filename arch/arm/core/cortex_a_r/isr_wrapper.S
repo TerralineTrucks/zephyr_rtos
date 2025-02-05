@@ -244,7 +244,7 @@ spurious_continue:
  */
 SECTION_FUNC(TEXT, _isr_wrapper)
 	sub lr, #4
-	z_arm_cortex_ar_enter_exc MODE_IRQ
+	z_arm_cortex_ar_enter_exc
 
 	/* Increment interrupt nesting count */
 	get_cpu r2
@@ -295,7 +295,7 @@ _idle_state_cleared:
 	bl z_soc_irq_get_active
 #endif /* !CONFIG_ARM_CUSTOM_INTERRUPT_CONTROLLER */
 
-	//push {r0, r1} // TODO
+	push {r0, r1}
 	lsl r0, r0, #3	/* table is 8-byte wide */
 
 	/*
@@ -320,7 +320,7 @@ _idle_state_cleared:
 
 spurious_continue:
 	/* Signal end-of-interrupt */
-	//pop {r0, r1} // TODO
+	pop {r0, r1}
 #if !defined(CONFIG_ARM_CUSTOM_INTERRUPT_CONTROLLER)
 	bl arm_gic_eoi
 #else

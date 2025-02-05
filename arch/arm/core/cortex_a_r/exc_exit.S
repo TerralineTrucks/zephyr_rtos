@@ -245,12 +245,9 @@ SECTION_SUBSEC_FUNC(TEXT, _HandlerModeExit, z_arm_cortex_ar_exit_exc)
 	fpu_exc_exit
 #endif
 
-	/*
-	 * Restore r0-r3, r12, lr, lr_und and spsr_und from the exception stack
-	 * and return to the current thread.
-	 */
-	ldmia sp, {r0-r3, r12, lr}^
-	add sp, #24
+	/* Restore r0-r3, r12, sys lr, from the exception stack. */
+	pop {r0-r3, r12, lr}
+	/* Return to the PC and CPSR of the saved context. */
 	rfeia sp!
 	
 #endif /* CONFIG_USE_SWITCH */
