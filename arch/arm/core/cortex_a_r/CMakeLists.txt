@@ -4,6 +4,7 @@ zephyr_library()
 
 zephyr_library_sources(
   exc.S
+  exc_exit.S
   fault.c
   irq_init.c
   reboot.c
@@ -25,4 +26,4 @@ zephyr_library_sources_ifdef(CONFIG_SEMIHOST semihost.c)
 zephyr_library_sources_ifdef(CONFIG_THREAD_LOCAL_STORAGE __aeabi_read_tp.S)
 zephyr_library_sources_ifdef(CONFIG_ARCH_CACHE cache.c)
 zephyr_library_sources_ifdef(CONFIG_USE_SWITCH switch.S)
-zephyr_library_sources_ifndef(CONFIG_USE_SWITCH swap.c swap_helper.S exc_exit.S)
+zephyr_library_sources_ifndef(CONFIG_USE_SWITCH swap.c swap_helper.S)

@@ -27,6 +27,7 @@ GTEXT(z_arm_int_exit)
 GTEXT(z_arm_do_swap)
 GDATA(_kernel)
 
+#ifndef CONFIG_USE_SWITCH
 .macro userspace_exc_exit
 #if defined(CONFIG_USERSPACE)
 	cps #MODE_SVC
@@ -60,49 +61,6 @@ GDATA(_kernel)
 	cps #MODE_SVC
 system_thread_exit\@:
 	pop {r0-r1}
-#endif
-.endm
-
-.macro fpu_exc_exit
-#if defined(CONFIG_FPU_SHARING)
-	/*
-	 * If the floating point context pointer is null, then a context was
-	 * saved so restore the float context from the exception stack frame.
-	 */
-	get_cpu r2
-	ldr r1, [r2, #___cpu_t_fp_ctx_OFFSET]
-	cmp r1, #0
-	beq vfp_restore\@
-
-	/*
-	 * If leaving the last interrupt context, remove the floating point
-	 * context pointer.
-	 */
-	cmp r0, #0
-	moveq r1, #0
-	streq r1, [r2, #___cpu_t_fp_ctx_OFFSET]
-	b vfp_exit\@
-
-vfp_restore\@:
-	add r3, sp, #___fpu_sf_t_fpscr_OFFSET
-	ldm r3, {r1, r2}
-	tst r2, #FPEXC_EN
-	beq vfp_exit\@
-
-	vmsr fpexc, r2
-	vmsr fpscr, r1
-	mov r3, sp
-	vldmia r3!, {s0-s15}
-#ifdef CONFIG_VFP_FEATURE_REGS_S64_D32
-	vldmia r3!, {d16-d31}
-#endif
-
-vfp_exit\@:
-	/* Leave the VFP disabled when leaving */
-	mov r1, #0
-	vmsr fpexc, r1
-
-	add sp, sp, #___fpu_t_SIZEOF
 #endif
 .endm
 
@@ -271,3 +229,22 @@ __EXIT_EXC:
 	ldmia sp, {r0-r3, r12, lr}^
 	add sp, #24
 	rfeia sp!
+
+#else /* CONFIG_USE_SWITCH */
+GTEXT(z_arm_cortex_ar_exit_exc)
+SECTION_SUBSEC_FUNC(TEXT, _HandlerModeExit, z_arm_cortex_ar_exit_exc)
+
+	/* decrement exception depth */
+	get_cpu r2
+	ldrb r1, [r2, #_cpu_offset_to_exc_depth]
+	sub r1, r1, #1
+	strb r1, [r2, #_cpu_offset_to_exc_depth]
+
+	/*
+	 * Restore r0-r3, r12, lr, lr_und and spsr_und from the exception stack
+	 * and return to the current thread.
+	 */
+	ldmia sp, {r0-r3, r12, lr}^
+	add sp, #24
+	rfeia sp!
+#endif
