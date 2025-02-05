@@ -36,7 +36,7 @@ struct __fpu_sf {
 	uint64_t d[16]; /* d16~d31 */
 #endif
 	uint32_t fpscr;
-	uint32_t undefined;
+	uint32_t fpexc;
 };
 #endif
 
