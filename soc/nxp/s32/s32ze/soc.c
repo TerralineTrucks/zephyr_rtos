@@ -145,6 +145,10 @@ void z_arm_platform_init(void)
 			__set_SCTLR(__get_SCTLR() | SCTLR_I_Msk);
 			barrier_isync_fence_full();
 		}
+	} else {
+		/* Explicitly disable the ICACHE */
+		__set_SCTLR(__get_SCTLR() & (~SCTLR_I_Msk));
+		__ISB();
 	}
 
 	if (IS_ENABLED(CONFIG_DCACHE)) {
@@ -153,6 +157,10 @@ void z_arm_platform_init(void)
 			__set_SCTLR(__get_SCTLR() | SCTLR_C_Msk);
 			barrier_dsync_fence_full();
 		}
+	} else {
+		/* Explicitly disable the DCACHE */
+		__set_SCTLR(__get_SCTLR() & (~SCTLR_C_Msk));
+		__ISB();
 	}
 }
 
